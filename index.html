@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>강수로 — Data Engineer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#101826;
+    --ink-soft:#1b2534;
+    --paper:#eef1ec;
+    --paper-dim:#e3e7e0;
+    --line:#3e6e8e;
+    --line-soft:rgba(62,110,142,0.35);
+    --bronze:#b97a4e;
+    --silver:#8fa0a8;
+    --gold:#d6a339;
+    --text-dark:#16202c;
+    --text-mute:#525f6b;
+    --text-light:#edefe9;
+    --text-light-mute:#a9b3bd;
+    --radius:2px;
+    --display: 'Space Grotesk', sans-serif;
+    --body: 'IBM Plex Sans KR', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--paper);
+    color:var(--text-dark);
+    font-family:var(--body);
+    line-height:1.6;
+    overflow-x:hidden;
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    *{animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important;}
+  }
+
+  /* ---------- utility ---------- */
+  .wrap{max-width:1120px; margin:0 auto; padding:0 32px;}
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--line);
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:22px; height:1px;
+    background:var(--line);
+    display:inline-block;
+  }
+  h2.section-title{
+    font-family:var(--display);
+    font-size:clamp(28px,4vw,42px);
+    font-weight:600;
+    letter-spacing:-0.01em;
+    margin-top:10px;
+    color:var(--text-dark);
+  }
+  section{padding:110px 0; position:relative;}
+  .reveal{opacity:0; transform:translateY(18px); transition:opacity .7s ease, transform .7s ease;}
+  .reveal.in{opacity:1; transform:translateY(0);}
+
+  /* ---------- nav ---------- */
+  header{
+    position:fixed; top:0; left:0; right:0; z-index:100;
+    backdrop-filter:blur(10px);
+    background:rgba(238,241,236,0.82);
+    border-bottom:1px solid rgba(16,24,38,0.08);
+  }
+  nav{
+    max-width:1120px; margin:0 auto; padding:18px 32px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .logo{
+    font-family:var(--mono); font-weight:500; font-size:15px;
+    color:var(--text-dark); letter-spacing:0.02em;
+    display:flex; align-items:center; gap:8px;
+  }
+  .logo .dot{width:6px;height:6px;background:var(--gold);border-radius:50%; display:inline-block;}
+  .navlinks{display:flex; gap:32px; list-style:none;}
+  .navlinks a{
+    font-family:var(--mono); font-size:12.5px; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--text-mute); text-decoration:none; position:relative; padding-bottom:3px;
+    transition:color .2s ease;
+  }
+  .navlinks a:hover{color:var(--text-dark);}
+  .navlinks a::after{
+    content:""; position:absolute; left:0; bottom:0; width:0; height:1px; background:var(--line);
+    transition:width .25s ease;
+  }
+  .navlinks a:hover::after{width:100%;}
+  .navtoggle{display:none;}
+
+  /* ---------- hero ---------- */
+  .hero{
+    min-height:100vh;
+    display:flex; align-items:center;
+    background:
+      linear-gradient(var(--line-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-soft) 1px, transparent 1px),
+      var(--ink);
+    background-size:48px 48px, 48px 48px, auto;
+    background-position:center;
+    position:relative;
+    overflow:hidden;
+  }
+  .hero::before{
+    content:"";
+    position:absolute; inset:0;
+    background:radial-gradient(ellipse 60% 50% at 30% 30%, rgba(214,163,57,0.10), transparent 60%),
+               radial-gradient(ellipse 50% 40% at 80% 75%, rgba(62,110,142,0.18), transparent 60%);
+    pointer-events:none;
+  }
+  .hero-inner{position:relative; z-index:2; padding-top:80px; width:100%;}
+  .hero-kicker{
+    font-family:var(--mono); font-size:13px; letter-spacing:.16em; text-transform:uppercase;
+    color:#8fd1c9; display:flex; align-items:center; gap:10px; margin-bottom:22px;
+  }
+  .hero-kicker .line{width:36px;height:1px;background:#8fd1c9;}
+  h1.hero-title{
+    font-family:var(--display); font-weight:700; color:var(--text-light);
+    font-size:clamp(42px,7.2vw,88px); line-height:1.02; letter-spacing:-0.02em;
+  }
+  h1.hero-title span{color:var(--gold);}
+  .hero-role{
+    font-family:var(--mono); font-size:clamp(14px,1.6vw,18px); color:var(--text-light-mute);
+    margin-top:22px; max-width:640px; line-height:1.8;
+  }
+  .hero-role b{color:var(--text-light); font-weight:500;}
+  .hero-meta{
+    display:flex; flex-wrap:wrap; gap:28px; margin-top:44px;
+  }
+  .hero-meta a, .hero-meta span{
+    font-family:var(--mono); font-size:13px; color:var(--text-light-mute);
+    text-decoration:none; display:flex; align-items:center; gap:8px;
+  }
+  .hero-meta a:hover{color:var(--text-light);}
+  .hero-meta .k{color:#8fd1c9;}
+  .hero-scroll{
+    position:absolute; bottom:34px; left:32px; z-index:2;
+    font-family:var(--mono); font-size:11px; color:var(--text-light-mute);
+    letter-spacing:.1em; display:flex; align-items:center; gap:10px;
+  }
+  .hero-scroll .bar{width:1px; height:28px; background:linear-gradient(var(--gold), transparent); position:relative; overflow:hidden;}
+
+  /* ---------- about ---------- */
+  .about-grid{
+    display:grid; grid-template-columns:1.1fr 0.9fr; gap:64px; margin-top:44px; align-items:start;
+  }
+  .about-text p{font-size:16.5px; color:var(--text-mute); margin-bottom:18px; max-width:52ch;}
+  .about-text strong{color:var(--text-dark); font-weight:600;}
+  .stat-card{
+    border:1px solid rgba(16,24,38,0.12);
+    background:#fff;
+    padding:22px 24px;
+    margin-bottom:14px;
+  }
+  .stat-card .num{font-family:var(--display); font-size:30px; font-weight:600; color:var(--ink);}
+  .stat-card .num small{font-family:var(--mono); font-size:13px; color:var(--line); font-weight:400; margin-left:4px;}
+  .stat-card .lbl{font-family:var(--mono); font-size:11.5px; color:var(--text-mute); text-transform:uppercase; letter-spacing:.06em; margin-top:6px;}
+
+  /* ---------- skills pipeline ---------- */
+  .pipeline-flow{
+    display:flex; align-items:stretch; gap:0; margin-top:64px; flex-wrap:wrap;
+  }
+  .stage{
+    flex:1; min-width:230px; position:relative;
+    background:#fff; border:1px solid rgba(16,24,38,0.1);
+    padding:26px 22px; margin:10px;
+  }
+  .stage .stage-idx{font-family:var(--mono); font-size:11px; color:var(--line); letter-spacing:.1em;}
+  .stage h3{font-family:var(--display); font-size:19px; font-weight:600; margin:8px 0 14px; color:var(--text-dark);}
+  .chip-row{display:flex; flex-wrap:wrap; gap:7px;}
+  .chip{
+    font-family:var(--mono); font-size:11.5px; color:var(--text-dark);
+    border:1px solid rgba(16,24,38,0.18); padding:4px 9px; background:var(--paper);
+  }
+  .stage-arrow{
+    display:flex; align-items:center; justify-content:center; width:28px; color:var(--line); flex-shrink:0;
+    font-size:18px;
+  }
+  @media (max-width:900px){ .stage-arrow{display:none;} }
+
+  /* ---------- career pipeline (bronze/silver/gold) ---------- */
+  .career-line{
+    position:relative; margin-top:70px;
+  }
+  .career-track{
+    position:absolute; top:38px; left:0; right:0; height:2px;
+    background:repeating-linear-gradient(90deg, var(--line-soft) 0 8px, transparent 8px 14px);
+    z-index:0;
+  }
+  .career-cols{display:grid; grid-template-columns:repeat(3,1fr); gap:26px; position:relative; z-index:1;}
+  .stagecard{cursor:pointer;}
+  .stagecard .badge{
+    width:76px; height:76px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+    color:#fff; margin:0 auto 20px; text-align:center; line-height:1.3;
+    border:4px solid var(--paper);
+  }
+  .stagecard.bronze .badge{background:var(--bronze);}
+  .stagecard.silver .badge{background:var(--silver);}
+  .stagecard.gold .badge{background:var(--gold);}
+  .stagecard .card-body{
+    background:#fff; border:1px solid rgba(16,24,38,0.1); padding:24px 22px; text-align:left;
+    transition:box-shadow .25s ease, transform .25s ease;
+  }
+  .stagecard:hover .card-body{box-shadow:0 14px 30px rgba(16,24,38,0.08); transform:translateY(-3px);}
+  .stagecard .period{font-family:var(--mono); font-size:11.5px; color:var(--line);}
+  .stagecard h3{font-family:var(--display); font-size:20px; margin:8px 0 4px;}
+  .stagecard .role{font-family:var(--mono); font-size:12.5px; color:var(--text-mute); margin-bottom:14px;}
+  .stagecard ul{padding-left:16px; color:var(--text-mute); font-size:14px;}
+  .stagecard ul li{margin-bottom:6px;}
+  .stagecard .clients{
+    margin-top:14px; padding-top:14px; border-top:1px dashed rgba(16,24,38,0.15);
+    font-family:var(--mono); font-size:11px; color:var(--text-mute); line-height:1.7;
+  }
+  @media (max-width:900px){ .career-cols{grid-template-columns:1fr;} .career-track{display:none;} }
+
+  /* ---------- projects ---------- */
+  .filter-row{display:flex; gap:10px; flex-wrap:wrap; margin:38px 0 30px;}
+  .filter-btn{
+    font-family:var(--mono); font-size:12px; letter-spacing:.04em;
+    padding:9px 16px; border:1px solid rgba(16,24,38,0.2); background:transparent;
+    color:var(--text-mute); cursor:pointer; transition:all .2s ease;
+  }
+  .filter-btn.active, .filter-btn:hover{background:var(--ink); color:var(--text-light); border-color:var(--ink);}
+  .proj-list{display:flex; flex-direction:column; gap:1px; background:rgba(16,24,38,0.1);}
+  .proj-item{background:var(--paper);}
+  .proj-head{
+    display:grid; grid-template-columns:26px 1fr auto auto 20px; gap:18px; align-items:center;
+    padding:20px 20px; cursor:pointer; background:#fff;
+  }
+  .proj-head:hover{background:#fafbf9;}
+  .proj-head .pidx{font-family:var(--mono); font-size:12px; color:var(--line);}
+  .proj-head .ptitle{font-family:var(--body); font-weight:600; font-size:15.5px; color:var(--text-dark);}
+  .proj-head .ptask{font-family:var(--mono); font-size:12px; color:var(--text-mute); display:none;}
+  .proj-head .pperiod{font-family:var(--mono); font-size:12px; color:var(--line); white-space:nowrap;}
+  .proj-head .pchev{color:var(--text-mute); transition:transform .25s ease; font-size:12px;}
+  .proj-item.open .pchev{transform:rotate(180deg);}
+  @media (min-width:720px){ .proj-head .ptask{display:block;} }
+  .proj-body{
+    max-height:0; overflow:hidden; transition:max-height .35s ease;
+    background:#fbfbf9;
+  }
+  .proj-item.open .proj-body{max-height:600px;}
+  .proj-body-inner{padding:6px 20px 26px 66px; display:grid; grid-template-columns:1fr 1fr; gap:24px;}
+  @media (max-width:720px){ .proj-body-inner{grid-template-columns:1fr; padding-left:20px;} }
+  .proj-col h4{font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--line); margin-bottom:8px;}
+  .proj-col p, .proj-col li{font-size:14px; color:var(--text-mute);}
+  .proj-col ul{padding-left:16px; margin-bottom:8px;}
+  .tagset{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;}
+  .tagset span{font-family:var(--mono); font-size:11px; border:1px solid rgba(16,24,38,0.18); padding:3px 8px; color:var(--text-dark);}
+  .tag-company{
+    font-family:var(--mono); font-size:10.5px; padding:2px 8px; border-radius:20px; color:#fff; white-space:nowrap;
+  }
+
+  /* ---------- education / cert ---------- */
+  .edu-grid{display:grid; grid-template-columns:1fr 1fr; gap:60px; margin-top:50px;}
+  .edu-block h4{font-family:var(--mono); font-size:12px; color:var(--line); text-transform:uppercase; letter-spacing:.08em; margin-bottom:18px;}
+  .edu-entry{padding:16px 0; border-bottom:1px solid rgba(16,24,38,0.1);}
+  .edu-entry:last-child{border-bottom:none;}
+  .edu-entry .t1{font-weight:600; font-size:15.5px; color:var(--text-dark);}
+  .edu-entry .t2{font-family:var(--mono); font-size:12.5px; color:var(--text-mute); margin-top:4px;}
+  @media (max-width:800px){ .edu-grid{grid-template-columns:1fr; gap:40px;} }
+
+  /* ---------- footer ---------- */
+  footer{
+    background:var(--ink); color:var(--text-light); padding:90px 0 40px; position:relative;
+  }
+  .footer-top{display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:30px;}
+  footer h2{font-family:var(--display); font-size:clamp(30px,5vw,52px); font-weight:600; max-width:600px;}
+  .footer-contact{display:flex; flex-direction:column; gap:10px; align-items:flex-start;}
+  .footer-contact a{
+    font-family:var(--mono); color:var(--text-light); text-decoration:none; font-size:15px;
+    border-bottom:1px solid rgba(237,239,233,0.3); padding-bottom:2px;
+  }
+  .footer-bottom{
+    margin-top:70px; padding-top:24px; border-top:1px solid rgba(237,239,233,0.15);
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;
+    font-family:var(--mono); font-size:11.5px; color:var(--text-light-mute);
+  }
+
+  ::selection{background:var(--gold); color:var(--ink);}
+</style>
+</head>
+<body>
+
+<header>
+  <nav>
+    <div class="logo"><span class="dot"></span>강수로 · SK</div>
+    <ul class="navlinks">
+      <li><a href="#about">About</a></li>
+      <li><a href="#skills">Stack</a></li>
+      <li><a href="#career">Career</a></li>
+      <li><a href="#projects">Projects</a></li>
+      <li><a href="#education">Education</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="wrap hero-inner">
+    <div class="hero-kicker"><span class="line"></span>DATA ENGINEER / EVENT TAXONOMY / DASHBOARD ARCHITECTURE</div>
+    <h1 class="hero-title">강수로<br><span>Suro Kang</span></h1>
+    <p class="hero-role">
+      사용자 행동 데이터를 <b>수집 → 적재 → 모델링 → 시각화</b>까지 한 흐름으로 설계하는 데이터 엔지니어입니다.<br>
+      GA4·GTM 기반 이벤트 택소노미 구축부터 GCP/AWS 데이터레이크, 전사 대시보드 운영까지 8년째 데이터 파이프라인을 다루고 있습니다.
+    </p>
+    <div class="hero-meta">
+      <span class="k">EXP</span><span>2018 — 현재 (8년차)</span>
+      <span class="k">현재</span><span>한샘 · Data Engineer</span>
+      <a href="mailto:rkdtnfh@naver.com"><span class="k">MAIL</span>rkdtnfh@naver.com</a>
+      <a href="tel:01094934672"><span class="k">TEL</span>010-9493-4672</a>
+    </div>
+  </div>
+  <div class="hero-scroll"><span class="bar"></span>SCROLL</div>
+</section>
+
+<section id="about">
+  <div class="wrap reveal">
+    <div class="eyebrow">01 · About</div>
+    <h2 class="section-title">데이터가 흐르게 만드는 사람</h2>
+    <div class="about-grid">
+      <div class="about-text">
+        <p>문제를 발견하면 원인을 끝까지 추적하고, 해결 방법을 찾아내는 과정 자체에 몰입합니다. <strong>데이터 수집 표준화, 반복 업무 자동화</strong>를 통해 팀이 분석과 의사결정에만 집중할 수 있는 환경을 만드는 것을 목표로 합니다.</p>
+        <p>Golden Planet과 Media.Monks에서 다양한 업종(금융, 이커머스, 뷰티, 미디어)의 <strong>기술 컨설팅</strong>을 수행했고, 현재 한샘에서는 <strong>전사 데이터 인프라와 대시보드 생태계</strong>를 직접 설계·운영하고 있습니다.</p>
+        <p>좋은 태도로 업무에 임하는 것을 가장 중요한 원칙으로 삼고, 유관 부서와의 커뮤니케이션을 통해 "쓰이는 데이터"를 만드는 데 집중합니다.</p>
+      </div>
+      <div class="about-stats">
+        <div class="stat-card"><div class="num">8<small>YEARS</small></div><div class="lbl">데이터 엔지니어링 / 기술 컨설팅 경력</div></div>
+        <div class="stat-card"><div class="num">20+<small>PROJECTS</small></div><div class="lbl">데이터 파이프라인 · 대시보드 구축 프로젝트</div></div>
+        <div class="stat-card"><div class="num">2<small>CERTS</small></div><div class="lbl">Google Cloud Professional (Architect / Data Engineer)</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="skills" style="background:var(--paper-dim);">
+  <div class="wrap reveal">
+    <div class="eyebrow">02 · Stack</div>
+    <h2 class="section-title">데이터가 이동하는 4단계</h2>
+    <p style="font-family:var(--mono); font-size:13px; color:var(--text-mute); margin-top:14px;">스킬셋을 실제 데이터 파이프라인 흐름 순서로 정리했습니다.</p>
+    <div class="pipeline-flow">
+      <div class="stage">
+        <div class="stage-idx">STAGE 01 — COLLECT</div>
+        <h3>수집</h3>
+        <div class="chip-row">
+          <span class="chip">GA4</span><span class="chip">GTM</span><span class="chip">Amplitude</span>
+          <span class="chip">Mixpanel</span><span class="chip">AppsFlyer</span><span class="chip">Airbridge</span>
+          <span class="chip">Braze</span><span class="chip">Hackle</span>
+        </div>
+      </div>
+      <div class="stage-arrow">→</div>
+      <div class="stage">
+        <div class="stage-idx">STAGE 02 — STORE</div>
+        <h3>적재</h3>
+        <div class="chip-row">
+          <span class="chip">GCS</span><span class="chip">S3</span><span class="chip">Cloud Function</span>
+          <span class="chip">Pub/Sub</span><span class="chip">Glue</span><span class="chip">MSSQL</span><span class="chip">MySQL</span>
+        </div>
+      </div>
+      <div class="stage-arrow">→</div>
+      <div class="stage">
+        <div class="stage-idx">STAGE 03 — PROCESS</div>
+        <h3>처리 · 모델링</h3>
+        <div class="chip-row">
+          <span class="chip">BigQuery</span><span class="chip">Redshift</span><span class="chip">Athena</span>
+          <span class="chip">Cloud Composer</span><span class="chip">Airflow</span><span class="chip">Python</span><span class="chip">SQL</span>
+        </div>
+      </div>
+      <div class="stage-arrow">→</div>
+      <div class="stage">
+        <div class="stage-idx">STAGE 04 — ACTIVATE</div>
+        <h3>시각화 · 활용</h3>
+        <div class="chip-row">
+          <span class="chip">Tableau</span><span class="chip">Data Studio</span><span class="chip">Superset</span>
+          <span class="chip">JavaScript</span><span class="chip">Github</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="career">
+  <div class="wrap reveal">
+    <div class="eyebrow">03 · Career</div>
+    <h2 class="section-title">Bronze → Silver → Gold, 경력도 하나의 레이크하우스</h2>
+    <p style="font-family:var(--mono); font-size:13px; color:var(--text-mute); margin-top:14px;">카드를 클릭하면 상세 이력이 펼쳐집니다.</p>
+
+    <div class="career-line">
+      <div class="career-track"></div>
+      <div class="career-cols">
+
+        <div class="stagecard bronze" onclick="this.classList.toggle('open')">
+          <div class="badge">BRONZE<br>2018–20</div>
+          <div class="card-body">
+            <div class="period">2018.01 – 2020.05</div>
+            <h3>Golden Planet</h3>
+            <div class="role">Technical Solutions Engineer</div>
+            <ul>
+              <li>사용자 행동 데이터 이벤트 택소노미 구축 및 관리</li>
+              <li>온라인 고객 행동 데이터 분석 · 기술 컨설팅</li>
+              <li>화장품 감각 PCA 분석 프로그램 개발</li>
+              <li>A/B 테스트 설계 및 구현</li>
+            </ul>
+            <div class="clients">CLIENTS — 아모레퍼시픽, 무신사, 삼성증권, TVING, 신한카드, KB카드 외</div>
+          </div>
+        </div>
+
+        <div class="stagecard silver" onclick="this.classList.toggle('open')">
+          <div class="badge">SILVER<br>2020–23</div>
+          <div class="card-body">
+            <div class="period">2020.06 – 2023.08</div>
+            <h3>Media.Monks</h3>
+            <div class="role">Senior Technical Solutions Engineer</div>
+            <ul>
+              <li>사용자 행동 데이터 이벤트 택소노미 구축 및 관리</li>
+              <li>마케팅 통합 대시보드 구축 프로젝트 (데이터레이크 설계)</li>
+              <li>금융사 DMZ 연동 데이터 내재화 프로그램 개발</li>
+              <li>세그먼트 마케팅 자동화 (Braze 연동)</li>
+            </ul>
+            <div class="clients">CLIENTS — 삼성전자, 현대캐피탈, 홈플러스, CJ제일제당, 위메프, 이랜드 외</div>
+          </div>
+        </div>
+
+        <div class="stagecard gold" onclick="this.classList.toggle('open')">
+          <div class="badge">GOLD<br>2023–현재</div>
+          <div class="card-body">
+            <div class="period">2023.09 – 현재</div>
+            <h3>한샘</h3>
+            <div class="role">Data Engineer</div>
+            <ul>
+              <li>사용자 행동 데이터 이벤트 택소노미 구축 및 관리</li>
+              <li>전사 대시보드용 데이터 마트 모델링 · 구축 · 유지보수</li>
+              <li>전사 데이터레이크(GCP + AWS) 관리 및 운영</li>
+              <li>전사 데이터 이해도 향상을 위한 내부 교육 진행</li>
+            </ul>
+            <div class="clients">SCOPE — 홈 인테리어 제조·유통, 전사 데이터 인프라</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="projects" style="background:var(--paper-dim);">
+  <div class="wrap reveal">
+    <div class="eyebrow">04 · Projects</div>
+    <h2 class="section-title">주요 프로젝트 13</h2>
+    <p style="font-family:var(--mono); font-size:13px; color:var(--text-mute); margin-top:14px;">회사별로 필터링하고, 항목을 클릭해 상세 내용을 확인하세요.</p>
+
+    <div class="filter-row">
+      <button class="filter-btn active" data-f="all">전체</button>
+      <button class="filter-btn" data-f="hanssem">한샘</button>
+      <button class="filter-btn" data-f="mm">Media.Monks</button>
+      <button class="filter-btn" data-f="gp">Golden Planet</button>
+    </div>
+
+    <div class="proj-list" id="projList"></div>
+  </div>
+</section>
+
+<section id="education">
+  <div class="wrap reveal">
+    <div class="eyebrow">05 · Education & Credentials</div>
+    <h2 class="section-title">학력 · 자격 · 수상</h2>
+    <div class="edu-grid">
+      <div class="edu-block">
+        <h4>Education</h4>
+        <div class="edu-entry">
+          <div class="t1">동서울대학교 · 정보통신과</div>
+          <div class="t2">2013.03 – 2018.02 · 평점 4.49 / 4.50</div>
+        </div>
+        <div class="edu-entry">
+          <div class="t1">학점은행제 · 정보통신공학</div>
+          <div class="t2">2022.02 – 2022.08 · 평점 3.75 / 4.50</div>
+        </div>
+        <h4 style="margin-top:34px;">Award</h4>
+        <div class="edu-entry">
+          <div class="t1">NetRiders Korea Silver Prize</div>
+          <div class="t2">시스코 · 2017</div>
+        </div>
+      </div>
+      <div class="edu-block">
+        <h4>Certifications</h4>
+        <div class="edu-entry"><div class="t1">Google Cloud Professional Cloud Architect</div><div class="t2">Google · 2021.12 – 2023.12</div></div>
+        <div class="edu-entry"><div class="t1">Google Cloud Professional Data Engineer</div><div class="t2">Google · 2021.12 – 2023.12</div></div>
+        <div class="edu-entry"><div class="t1">정보처리기사</div><div class="t2">한국산업인력공단 · 2022.09</div></div>
+        <div class="edu-entry"><div class="t1">Google Analytics 4 Certification</div><div class="t2">Google · 2022.09 – 2023.09</div></div>
+        <div class="edu-entry"><div class="t1">Campaign Manager Certification</div><div class="t2">Google · 2022.10 – 2023.10</div></div>
+        <div class="edu-entry"><div class="t1">Display & Video Certification</div><div class="t2">Google · 2023.02 – 2024.02</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer id="contact">
+  <div class="wrap">
+    <div class="footer-top">
+      <h2>다음 데이터 파이프라인을<br>함께 설계하고 싶습니다.</h2>
+      <div class="footer-contact">
+        <a href="mailto:rkdtnfh@naver.com">rkdtnfh@naver.com</a>
+        <a href="tel:01094934672">010-9493-4672</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>SURO KANG — DATA ENGINEER</span>
+      <span>SEOUL, KOREA</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+const projects = [
+  {company:"gp", companyLabel:"Golden Planet", color:"#b97a4e", title:"사용자 행동 데이터 수집 구축 프로젝트", task:"온라인 고객 행동 데이터 분석, 기술 컨설팅", period:"2018.10 – 2023.08",
+    bg:["다양한 마케팅 툴(Braze, AppsFlyer)과의 통합 분석이 어려운 수집 환경", "데이터 정합성 이슈로 분석 단계보다 수집 단계에서 리소스 낭비 발생"],
+    do_:["행동 전 과정을 이벤트 단위로 설계해 사용자 여정 파악", "GA4 기반 고객 트래킹 툴 일원화 및 기여 분석 체계 구축"],
+    tags:["GA4","GTM","Kotlin","Swift","JavaScript"]},
+  {company:"mm", companyLabel:"Media.Monks", color:"#8fa0a8", title:"데이터 내재화 프로젝트", task:"데이터 전처리 후 고객사 내부 DW 적재", period:"2020.06 – 2020.07",
+    bg:["금융사 보안 정책상 GCP 직접 접속 불가", "복잡한 보안 설정에 맞춘 맞춤형 연동 모듈 필요"],
+    do_:["DMZ 서버를 중계 지점으로 활용해 BigQuery 원천 데이터를 안전하게 호출", "경량화된 Java 애플리케이션으로 일배치 동기화 구현"],
+    tags:["Cloud Function","Java"]},
+  {company:"mm", companyLabel:"Media.Monks", color:"#8fa0a8", title:"보고서 자동화 및 세그먼트 마케팅 자동화", task:"캠페인 유입 사용자 자동 타게팅 개발", period:"2021.04 – 2021.08",
+    bg:["캠페인마다 대상자 추출·메시지 세팅을 반복하며 마케터 생산성 저하"],
+    do_:["특정 이벤트·속성 기반 고객 자동 분류 및 발송 시점 최적화", "세그먼트별 반응률 자동 리포팅 체계 구축"],
+    tags:["BigQuery","Cloud Function","Pub/Sub","Dataflow","Braze"]},
+  {company:"mm", companyLabel:"Media.Monks", color:"#8fa0a8", title:"사용자 행태 분석 및 A/B 테스트", task:"A/B 테스트 설계 및 구현", period:"2020.09 – 2022.02",
+    bg:["직관에 의존한 UI/UX 개선의 한계"],
+    do_:["행태 로그 기반으로 이탈·혼란 지점을 객관적으로 파악", "일부 사용자 대상 실험으로 리스크 최소화하며 전환 지표 개선"],
+    tags:["Optimize","Hackle","Remote Config"]},
+  {company:"mm", companyLabel:"Media.Monks", color:"#8fa0a8", title:"마케팅 통합 대시보드 구축 프로젝트", task:"데이터레이크 설계 및 개발", period:"2022.08 – 2023.05",
+    bg:["GA4, Google Ads, CRM 등 채널별로 데이터가 분산되어 통합 성과 측정 불가"],
+    do_:["산재된 소스를 하나의 데이터레이크로 집결, ETL 자동화로 실시간에 가까운 조회 환경 구축", "Looker 거버넌스로 팀 간 동일 KPI 공유 체계 마련"],
+    tags:["BigQuery","Cloud Storage","Compute Engine","Airflow","Pub/Sub"]},
+  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", title:"사용자 행동 데이터 품질 개선", task:"데이터 품질 개선, 개선안 도출 및 구현", period:"2023.09 – 2024.06",
+    bg:["기존 수집 도구의 높은 데이터 유실율과 기능적 한계", "부서별 데이터 관리 문서가 분리되어 고립 발생"],
+    do_:["GA4 전환으로 이벤트 표준화 및 중복 수집 제거", "수집율 개선(사용자수 14%↑, 세션수 12%↑, PV 4%↑), 지표 제공 시간 D-1 → 1시간 단축"],
+    tags:["GA4","GTM","BigQuery","Cloud Function"]},
+  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", title:"전사 데이터 이해도 향상을 위한 내부 교육", task:"내부 교육 진행", period:"2024.05 – 2024.08",
+    bg:["데이터 인프라는 구축됐지만 현업 부서의 활용도가 낮음", "지표 해석 방식이 통일되지 않아 회의 시 혼선 발생"],
+    do_:["데이터 읽기·해석·적용 역량을 상향 평준화하는 사내 교육 6회 진행", "동일한 추출 로직·지표 산출 방식을 전사 공유"],
+    tags:["Google Slides","GA4"]},
+  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", title:"성과 측정 대시보드 구축 및 유지보수", task:"데이터 모델링, 데이터 마트, 대시보드 구축", period:"2024.07 – 2025.01",
+    bg:["데이터가 부서·팀별로 분산 관리되어 중복·비효율 발생", "실시간 모니터링 체계 부재"],
+    do_:["분산 데이터를 통합한 의사결정 체계와 KPI 표준화", "Tableau 기반 실시간 모니터링 대시보드 구축, 보고서 자동화로 리소스 절감"],
+    tags:["Tableau","BigQuery","EC2","S3","Athena","Airflow"]},
+  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", title:"핵심지표 개선(CRO) 프로젝트", task:"데이터 분석용 데이터 마트 모델링 및 구축", period:"2024.10 – 2025.01",
+    bg:["고객 이탈 지점을 정밀 추적할 환경 부재", "CAC 상승으로 전환율 개선 필요성 증대"],
+    do_:["가설 검증을 위한 실험 설계 및 A/B 테스트 인프라 구축", "빠른 실험 템포로 개선 속도 향상 및 데이터 기반 의사결정 문화 확산"],
+    tags:["Hackle","GA4","BigQuery","MSSQL","Airflow"]},
+  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", title:"리모델링 풀퍼널 대시보드 구축", task:"데이터 정의, 데이터 마트, 대시보드 제작", period:"2025.01 – 2025.07",
+    bg:["상담신청 이후 고객 여정 데이터 확인이 어려움", "온라인 유입부터 출고까지의 흐름을 알 수 있는 지표 부재"],
+    do_:["유입부터 출고 완료까지 퍼널 단계별 이탈/전환 시각화", "이탈 지점 기반 UI·UX 및 마케팅 전략 수립 근거 마련"],
+    tags:["Tableau","BigQuery","GCS","S3","Airflow"]},
+  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", title:"데이터레이크 관리 및 유지보수", task:"데이터레이크 관리 및 유지보수", period:"2025.11 – 현재",
+    bg:["70여 개 시스템으로 구성된 밸류체인, 약한 데이터 연결 고리", "온/오프라인 통합 분석 환경 부재"],
+    do_:["GCP(BigQuery Bronze/Silver/Gold) + AWS(Glue, Redshift) 이중 파이프라인 유지보수", "ETL 절차 점검 및 개선으로 온/오프라인 통합 분석 기반 마련"],
+    tags:["Glue","Athena","S3","Redshift","BigQuery","Airflow","Airbridge"]},
+  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", title:"리모델링 광고성과(ROAS) 대시보드 구축", task:"데이터 정의, 데이터 마트, 대시보드 제작", period:"2026.01 – 2026.06",
+    bg:["광고 데이터와 전환 데이터가 분리되어 성과 분석에 많은 가공 시간 소요"],
+    do_:["매체·소재별 성과를 한눈에 보는 통합 대시보드 구축", "전환(설치/매출) 예측이 가능한 데이터 기반 광고 운영 체계 마련"],
+    tags:["Tableau","Cloud Function","BigQuery","EC2","S3","Athena","Airflow"]},
+  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", title:"믹스패널 구축 프로젝트", task:"프로젝트 매니저", period:"2026.05 – 2026.07",
+    bg:["온/오프라인 고객 교차 분석 시 폐쇄망 데이터의 추출·재가공 필요", "Braze·Airbridge 등 타 솔루션과의 연동 고도화 필요"],
+    do_:["Mixpanel-Braze 연동을 통한 CRM 업무 고도화 및 분석 리소스 절감", "O2O/O4O 캠페인 기획을 위한 온/오프라인 통합 분석 체계 PM으로 총괄"],
+    tags:["Mixpanel","GTM","Kotlin","Swift","JavaScript"]},
+];
+
+const listEl = document.getElementById('projList');
+function renderProjects(filter){
+  listEl.innerHTML = "";
+  projects.filter(p => filter==='all' || p.company===filter).forEach((p, i) => {
+    const item = document.createElement('div');
+    item.className = 'proj-item';
+    item.innerHTML = `
+      <div class="proj-head">
+        <div class="pidx">${String(i+1).padStart(2,'0')}</div>
+        <div>
+          <div class="ptitle">${p.title}</div>
+          <div class="ptask">${p.task}</div>
+        </div>
+        <span class="tag-company" style="background:${p.color}">${p.companyLabel}</span>
+        <div class="pperiod">${p.period}</div>
+        <div class="pchev">▾</div>
+      </div>
+      <div class="proj-body">
+        <div class="proj-body-inner">
+          <div class="proj-col">
+            <h4>배경</h4>
+            <ul>${p.bg.map(b=>`<li>${b}</li>`).join('')}</ul>
+          </div>
+          <div class="proj-col">
+            <h4>수행 & 성과</h4>
+            <ul>${p.do_.map(d=>`<li>${d}</li>`).join('')}</ul>
+            <div class="tagset">${p.tags.map(t=>`<span>${t}</span>`).join('')}</div>
+          </div>
+        </div>
+      </div>
+    `;
+    item.querySelector('.proj-head').addEventListener('click', () => item.classList.toggle('open'));
+    listEl.appendChild(item);
+  });
+}
+renderProjects('all');
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    renderProjects(btn.dataset.f);
+  });
+});
+
+// scroll reveal
+const observer = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); } });
+}, {threshold:0.12});
+document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+</script>
+
+</body>
+</html>
