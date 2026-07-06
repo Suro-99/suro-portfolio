@@ -239,24 +239,43 @@
   .proj-list{display:flex; flex-direction:column; gap:1px; background:rgba(16,24,38,0.1);}
   .proj-item{background:var(--paper);}
   .proj-head{
-    display:grid; grid-template-columns:26px 1fr auto auto 20px; gap:18px; align-items:center;
-    padding:20px 20px; cursor:pointer; background:#fff;
+    display:grid; grid-template-columns:52px 1fr auto auto 20px; gap:18px; align-items:center;
+    padding:16px 20px; cursor:pointer; background:#fff;
   }
   .proj-head:hover{background:#fafbf9;}
-  .proj-head .pidx{font-family:var(--mono); font-size:12px; color:var(--line);}
+  .picon{
+    width:48px; height:48px; flex-shrink:0;
+    border:1.5px solid var(--c, var(--line));
+    display:flex; align-items:center; justify-content:center;
+    color:var(--c, var(--line)); background:#fff;
+  }
+  .picon svg{width:24px; height:24px; display:block;}
+  .proj-head .pidx{font-family:var(--mono); font-size:10.5px; color:var(--line); text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px;}
   .proj-head .ptitle{font-family:var(--body); font-weight:600; font-size:15.5px; color:var(--text-dark);}
-  .proj-head .ptask{font-family:var(--mono); font-size:12px; color:var(--text-mute); display:none;}
+  .proj-head .ptask{font-family:var(--mono); font-size:12px; color:var(--text-mute); display:none; margin-top:2px;}
   .proj-head .pperiod{font-family:var(--mono); font-size:12px; color:var(--line); white-space:nowrap;}
   .proj-head .pchev{color:var(--text-mute); transition:transform .25s ease; font-size:12px;}
   .proj-item.open .pchev{transform:rotate(180deg);}
   @media (min-width:720px){ .proj-head .ptask{display:block;} }
+  @media (max-width:560px){ .proj-head{grid-template-columns:44px 1fr 20px;} .proj-head .pperiod, .proj-head .tag-company{display:none;} }
   .proj-body{
-    max-height:0; overflow:hidden; transition:max-height .35s ease;
+    max-height:0; overflow:hidden; transition:max-height .4s ease;
     background:#fbfbf9;
   }
-  .proj-item.open .proj-body{max-height:600px;}
-  .proj-body-inner{padding:6px 20px 26px 66px; display:grid; grid-template-columns:1fr 1fr; gap:24px;}
+  .proj-item.open .proj-body{max-height:2000px;}
+  .proj-body-inner{padding:22px 20px 30px 90px; display:grid; grid-template-columns:1fr 1fr; gap:24px;}
   @media (max-width:720px){ .proj-body-inner{grid-template-columns:1fr; padding-left:20px;} }
+  .stagebar{
+    grid-column:1 / -1;
+    display:flex; flex-wrap:wrap; align-items:center; gap:0;
+    padding-bottom:18px; margin-bottom:6px; border-bottom:1px dashed rgba(16,24,38,0.15);
+  }
+  .stagebar .sb-item{display:flex; align-items:center; gap:7px;}
+  .stagebar .sb-dot{width:9px; height:9px; border-radius:50%; border:1.5px solid rgba(16,24,38,0.25); background:#fff; flex-shrink:0;}
+  .stagebar .sb-dot.active{border-color:var(--c); background:var(--c);}
+  .stagebar .sb-label{font-family:var(--mono); font-size:10.5px; color:var(--text-mute); text-transform:uppercase; letter-spacing:.04em;}
+  .stagebar .sb-label.active{color:var(--text-dark); font-weight:600;}
+  .stagebar .sb-line{width:22px; height:1px; background:rgba(16,24,38,0.2); margin:0 8px;}
   .proj-col h4{font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--line); margin-bottom:8px;}
   .proj-col p, .proj-col li{font-size:14px; color:var(--text-mute);}
   .proj-col ul{padding-left:16px; margin-bottom:8px;}
@@ -265,6 +284,21 @@
   .tag-company{
     font-family:var(--mono); font-size:10.5px; padding:2px 8px; border-radius:20px; color:#fff; white-space:nowrap;
   }
+  .proj-shot{
+    grid-column:1 / -1; position:relative; margin-bottom:6px;
+    border:1px solid rgba(16,24,38,0.14); background:#fff; cursor:zoom-in; overflow:hidden;
+  }
+  .proj-shot img{width:100%; display:block;}
+  .proj-shot .shot-cap{
+    position:absolute; top:0; left:0; font-family:var(--mono); font-size:10.5px; color:#fff;
+    background:rgba(16,24,38,0.72); padding:4px 10px; letter-spacing:.04em;
+  }
+  .lightbox{
+    position:fixed; inset:0; background:rgba(16,24,38,0.94); z-index:999;
+    display:none; align-items:center; justify-content:center; padding:48px; cursor:zoom-out;
+  }
+  .lightbox.open{display:flex;}
+  .lightbox img{max-width:100%; max-height:100%; box-shadow:0 30px 80px rgba(0,0,0,0.5);}
 
   /* ---------- education / cert ---------- */
   .edu-grid{display:grid; grid-template-columns:1fr 1fr; gap:60px; margin-top:50px;}
@@ -524,61 +558,90 @@
   </div>
 </footer>
 
+<div class="lightbox" id="lightbox">
+  <img id="lightbox-img" src="" alt="확대 이미지">
+</div>
+
 <script>
+// 24x24 획 기반 스키매틱 아이콘 (currentColor 사용, 외부 이미지 없이 프로젝트 성격을 시각화)
+const ICONS = {
+  taxonomy: `<path d="M12 3v5M12 8L6 13M12 8l6 5M6 13v6M18 13v6" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/><circle cx="12" cy="4.2" r="1.6" fill="currentColor"/><circle cx="6" cy="20" r="1.6" fill="currentColor"/><circle cx="18" cy="20" r="1.6" fill="currentColor"/>`,
+  dw: `<path d="M4 6c0-1.1 3.6-2 8-2s8 .9 8 2-3.6 2-8 2-8-.9-8-2z" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M4 6v12c0 1.1 3.6 2 8 2s8-.9 8-2V6" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M4 12c0 1.1 3.6 2 8 2s8-.9 8-2" stroke="currentColor" stroke-width="1.6" fill="none"/>`,
+  automation: `<circle cx="9" cy="9" r="3.2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M9 4.2v1.6M9 12.2v1.6M4.2 9h1.6M12.2 9h1.6M5.6 5.6l1.2 1.2M10.2 10.2l1.2 1.2M12.4 5.6l-1.2 1.2M6.8 10.2L5.6 11.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M13 15l7 6M17 15h3v3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+  abtest: `<path d="M4 5h5M4 5v14M4 19h5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M9 5l9 3.2M9 19l9-3.2" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/><circle cx="19" cy="8.2" r="1.6" fill="currentColor"/><circle cx="19" cy="15.8" r="1.6" fill="currentColor"/>`,
+  lake: `<rect x="4" y="4" width="16" height="4.5" rx="0.5" stroke="currentColor" stroke-width="1.5" fill="none"/><rect x="4" y="9.75" width="16" height="4.5" rx="0.5" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.75"/><rect x="4" y="15.5" width="16" height="4.5" rx="0.5" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.5"/>`,
+  dashboard: `<rect x="4" y="4" width="16" height="16" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M7.5 15.5v-4M12 15.5v-7M16.5 15.5v-2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>`,
+  funnel: `<path d="M4 5h16l-6 8v6l-4-2v-4L4 5z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>`,
+  education: `<path d="M3 8l9-4 9 4-9 4-9-4z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/><path d="M7 10.5v4.5c0 1.1 2.2 2 5 2s5-.9 5-2v-4.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M20 8v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
+  pm: `<circle cx="12" cy="5" r="2" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="5.5" cy="18" r="2" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="18.5" cy="18" r="2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M12 7v4M12 11L5.5 16M12 11l6.5 5" stroke="currentColor" stroke-width="1.5" fill="none"/>`,
+  roas: `<path d="M4 19V5M4 19h16" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/><rect x="6.5" y="13" width="2.4" height="6" fill="currentColor" opacity="0.8"/><rect x="11" y="9.5" width="2.4" height="9.5" fill="currentColor" opacity="0.8"/><rect x="15.5" y="12" width="2.4" height="7" fill="currentColor" opacity="0.8"/><path d="M6.5 10l4.5-3 4.5 2 4-4.5" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+};
+const STAGE_NAMES = ["수집","적재","처리","활용"];
+
 const projects = [
-  {company:"gp", companyLabel:"Golden Planet", color:"#b97a4e", title:"사용자 행동 데이터 수집 구축 프로젝트", task:"온라인 고객 행동 데이터 분석, 기술 컨설팅", period:"2018.10 – 2023.08",
+  {company:"gp", companyLabel:"Golden Planet", color:"#b97a4e", icon:"taxonomy", stages:[0], img:"images/proj-01.jpg", title:"사용자 행동 데이터 수집 구축 프로젝트", task:"온라인 고객 행동 데이터 분석, 기술 컨설팅", period:"2018.10 – 2023.08",
     bg:["다양한 마케팅 툴(Braze, AppsFlyer)과의 통합 분석이 어려운 수집 환경", "데이터 정합성 이슈로 분석 단계보다 수집 단계에서 리소스 낭비 발생"],
     do_:["행동 전 과정을 이벤트 단위로 설계해 사용자 여정 파악", "GA4 기반 고객 트래킹 툴 일원화 및 기여 분석 체계 구축"],
     tags:["GA4","GTM","Kotlin","Swift","JavaScript"]},
-  {company:"mm", companyLabel:"Media.Monks", color:"#8fa0a8", title:"데이터 내재화 프로젝트", task:"데이터 전처리 후 고객사 내부 DW 적재", period:"2020.06 – 2020.07",
+  {company:"mm", companyLabel:"Media.Monks", color:"#8fa0a8", icon:"dw", stages:[1,2], img:"images/proj-02.jpg", title:"데이터 내재화 프로젝트", task:"데이터 전처리 후 고객사 내부 DW 적재", period:"2020.06 – 2020.07",
     bg:["금융사 보안 정책상 GCP 직접 접속 불가", "복잡한 보안 설정에 맞춘 맞춤형 연동 모듈 필요"],
     do_:["DMZ 서버를 중계 지점으로 활용해 BigQuery 원천 데이터를 안전하게 호출", "경량화된 Java 애플리케이션으로 일배치 동기화 구현"],
     tags:["Cloud Function","Java"]},
-  {company:"mm", companyLabel:"Media.Monks", color:"#8fa0a8", title:"보고서 자동화 및 세그먼트 마케팅 자동화", task:"캠페인 유입 사용자 자동 타게팅 개발", period:"2021.04 – 2021.08",
+  {company:"mm", companyLabel:"Media.Monks", color:"#8fa0a8", icon:"automation", stages:[2,3], img:"images/proj-03.jpg", title:"보고서 자동화 및 세그먼트 마케팅 자동화", task:"캠페인 유입 사용자 자동 타게팅 개발", period:"2021.04 – 2021.08",
     bg:["캠페인마다 대상자 추출·메시지 세팅을 반복하며 마케터 생산성 저하"],
     do_:["특정 이벤트·속성 기반 고객 자동 분류 및 발송 시점 최적화", "세그먼트별 반응률 자동 리포팅 체계 구축"],
     tags:["BigQuery","Cloud Function","Pub/Sub","Dataflow","Braze"]},
-  {company:"mm", companyLabel:"Media.Monks", color:"#8fa0a8", title:"사용자 행태 분석 및 A/B 테스트", task:"A/B 테스트 설계 및 구현", period:"2020.09 – 2022.02",
+  {company:"mm", companyLabel:"Media.Monks", color:"#8fa0a8", icon:"abtest", stages:[3], img:"images/proj-04.jpg", title:"사용자 행태 분석 및 A/B 테스트", task:"A/B 테스트 설계 및 구현", period:"2020.09 – 2022.02",
     bg:["직관에 의존한 UI/UX 개선의 한계"],
     do_:["행태 로그 기반으로 이탈·혼란 지점을 객관적으로 파악", "일부 사용자 대상 실험으로 리스크 최소화하며 전환 지표 개선"],
     tags:["Optimize","Hackle","Remote Config"]},
-  {company:"mm", companyLabel:"Media.Monks", color:"#8fa0a8", title:"마케팅 통합 대시보드 구축 프로젝트", task:"데이터레이크 설계 및 개발", period:"2022.08 – 2023.05",
+  {company:"mm", companyLabel:"Media.Monks", color:"#8fa0a8", icon:"lake", stages:[1,2,3], img:"images/proj-05.jpg", title:"마케팅 통합 대시보드 구축 프로젝트", task:"데이터레이크 설계 및 개발", period:"2022.08 – 2023.05",
     bg:["GA4, Google Ads, CRM 등 채널별로 데이터가 분산되어 통합 성과 측정 불가"],
     do_:["산재된 소스를 하나의 데이터레이크로 집결, ETL 자동화로 실시간에 가까운 조회 환경 구축", "Looker 거버넌스로 팀 간 동일 KPI 공유 체계 마련"],
     tags:["BigQuery","Cloud Storage","Compute Engine","Airflow","Pub/Sub"]},
-  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", title:"사용자 행동 데이터 품질 개선", task:"데이터 품질 개선, 개선안 도출 및 구현", period:"2023.09 – 2024.06",
+  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", icon:"taxonomy", stages:[0,2], img:"images/proj-06.jpg", title:"사용자 행동 데이터 품질 개선", task:"데이터 품질 개선, 개선안 도출 및 구현", period:"2023.09 – 2024.06",
     bg:["기존 수집 도구의 높은 데이터 유실율과 기능적 한계", "부서별 데이터 관리 문서가 분리되어 고립 발생"],
     do_:["GA4 전환으로 이벤트 표준화 및 중복 수집 제거", "수집율 개선(사용자수 14%↑, 세션수 12%↑, PV 4%↑), 지표 제공 시간 D-1 → 1시간 단축"],
     tags:["GA4","GTM","BigQuery","Cloud Function"]},
-  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", title:"전사 데이터 이해도 향상을 위한 내부 교육", task:"내부 교육 진행", period:"2024.05 – 2024.08",
+  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", icon:"education", stages:[3], img:"images/proj-07.jpg", title:"전사 데이터 이해도 향상을 위한 내부 교육", task:"내부 교육 진행", period:"2024.05 – 2024.08",
     bg:["데이터 인프라는 구축됐지만 현업 부서의 활용도가 낮음", "지표 해석 방식이 통일되지 않아 회의 시 혼선 발생"],
     do_:["데이터 읽기·해석·적용 역량을 상향 평준화하는 사내 교육 6회 진행", "동일한 추출 로직·지표 산출 방식을 전사 공유"],
     tags:["Google Slides","GA4"]},
-  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", title:"성과 측정 대시보드 구축 및 유지보수", task:"데이터 모델링, 데이터 마트, 대시보드 구축", period:"2024.07 – 2025.01",
+  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", icon:"dashboard", stages:[2,3], img:"images/proj-08.jpg", title:"성과 측정 대시보드 구축 및 유지보수", task:"데이터 모델링, 데이터 마트, 대시보드 구축", period:"2024.07 – 2025.01",
     bg:["데이터가 부서·팀별로 분산 관리되어 중복·비효율 발생", "실시간 모니터링 체계 부재"],
     do_:["분산 데이터를 통합한 의사결정 체계와 KPI 표준화", "Tableau 기반 실시간 모니터링 대시보드 구축, 보고서 자동화로 리소스 절감"],
     tags:["Tableau","BigQuery","EC2","S3","Athena","Airflow"]},
-  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", title:"핵심지표 개선(CRO) 프로젝트", task:"데이터 분석용 데이터 마트 모델링 및 구축", period:"2024.10 – 2025.01",
+  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", icon:"abtest", stages:[2,3], img:"images/proj-09.jpg", title:"핵심지표 개선(CRO) 프로젝트", task:"데이터 분석용 데이터 마트 모델링 및 구축", period:"2024.10 – 2025.01",
     bg:["고객 이탈 지점을 정밀 추적할 환경 부재", "CAC 상승으로 전환율 개선 필요성 증대"],
     do_:["가설 검증을 위한 실험 설계 및 A/B 테스트 인프라 구축", "빠른 실험 템포로 개선 속도 향상 및 데이터 기반 의사결정 문화 확산"],
     tags:["Hackle","GA4","BigQuery","MSSQL","Airflow"]},
-  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", title:"리모델링 풀퍼널 대시보드 구축", task:"데이터 정의, 데이터 마트, 대시보드 제작", period:"2025.01 – 2025.07",
+  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", icon:"funnel", stages:[2,3], img:"images/proj-10.jpg", title:"리모델링 풀퍼널 대시보드 구축", task:"데이터 정의, 데이터 마트, 대시보드 제작", period:"2025.01 – 2025.07",
     bg:["상담신청 이후 고객 여정 데이터 확인이 어려움", "온라인 유입부터 출고까지의 흐름을 알 수 있는 지표 부재"],
     do_:["유입부터 출고 완료까지 퍼널 단계별 이탈/전환 시각화", "이탈 지점 기반 UI·UX 및 마케팅 전략 수립 근거 마련"],
     tags:["Tableau","BigQuery","GCS","S3","Airflow"]},
-  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", title:"데이터레이크 관리 및 유지보수", task:"데이터레이크 관리 및 유지보수", period:"2025.11 – 현재",
+  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", icon:"lake", stages:[1,2], img:"images/proj-11.jpg", title:"데이터레이크 관리 및 유지보수", task:"데이터레이크 관리 및 유지보수", period:"2025.11 – 현재",
     bg:["70여 개 시스템으로 구성된 밸류체인, 약한 데이터 연결 고리", "온/오프라인 통합 분석 환경 부재"],
     do_:["GCP(BigQuery Bronze/Silver/Gold) + AWS(Glue, Redshift) 이중 파이프라인 유지보수", "ETL 절차 점검 및 개선으로 온/오프라인 통합 분석 기반 마련"],
     tags:["Glue","Athena","S3","Redshift","BigQuery","Airflow","Airbridge"]},
-  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", title:"리모델링 광고성과(ROAS) 대시보드 구축", task:"데이터 정의, 데이터 마트, 대시보드 제작", period:"2026.01 – 2026.06",
+  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", icon:"roas", stages:[2,3], img:"images/proj-12.jpg", title:"리모델링 광고성과(ROAS) 대시보드 구축", task:"데이터 정의, 데이터 마트, 대시보드 제작", period:"2026.01 – 2026.06",
     bg:["광고 데이터와 전환 데이터가 분리되어 성과 분석에 많은 가공 시간 소요"],
     do_:["매체·소재별 성과를 한눈에 보는 통합 대시보드 구축", "전환(설치/매출) 예측이 가능한 데이터 기반 광고 운영 체계 마련"],
     tags:["Tableau","Cloud Function","BigQuery","EC2","S3","Athena","Airflow"]},
-  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", title:"믹스패널 구축 프로젝트", task:"프로젝트 매니저", period:"2026.05 – 2026.07",
+  {company:"hanssem", companyLabel:"한샘", color:"#d6a339", icon:"pm", stages:[0,3], img:"images/proj-13.jpg", title:"믹스패널 구축 프로젝트", task:"프로젝트 매니저", period:"2026.05 – 2026.07",
     bg:["온/오프라인 고객 교차 분석 시 폐쇄망 데이터의 추출·재가공 필요", "Braze·Airbridge 등 타 솔루션과의 연동 고도화 필요"],
     do_:["Mixpanel-Braze 연동을 통한 CRM 업무 고도화 및 분석 리소스 절감", "O2O/O4O 캠페인 기획을 위한 온/오프라인 통합 분석 체계 PM으로 총괄"],
     tags:["Mixpanel","GTM","Kotlin","Swift","JavaScript"]},
 ];
+
+function stageBarHtml(p){
+  return `<div class="stagebar" style="--c:${p.color}">` +
+    STAGE_NAMES.map((name,i)=>{
+      const active = p.stages.includes(i);
+      const dot = `<div class="sb-item"><span class="sb-dot${active?' active':''}"></span><span class="sb-label${active?' active':''}">${name}</span></div>`;
+      return i < STAGE_NAMES.length-1 ? dot + `<span class="sb-line"></span>` : dot;
+    }).join('') +
+  `</div>`;
+}
 
 const listEl = document.getElementById('projList');
 function renderProjects(filter){
@@ -588,8 +651,9 @@ function renderProjects(filter){
     item.className = 'proj-item';
     item.innerHTML = `
       <div class="proj-head">
-        <div class="pidx">${String(i+1).padStart(2,'0')}</div>
+        <div class="picon" style="--c:${p.color}"><svg viewBox="0 0 24 24">${ICONS[p.icon]}</svg></div>
         <div>
+          <div class="pidx">${String(i+1).padStart(2,'0')} · ${p.companyLabel}</div>
           <div class="ptitle">${p.title}</div>
           <div class="ptask">${p.task}</div>
         </div>
@@ -599,6 +663,11 @@ function renderProjects(filter){
       </div>
       <div class="proj-body">
         <div class="proj-body-inner">
+          ${stageBarHtml(p)}
+          <div class="proj-shot" onclick="openLightbox('${p.img}')">
+            <span class="shot-cap">SCREENSHOT</span>
+            <img src="${p.img}" alt="${p.title} 다이어그램" loading="lazy">
+          </div>
           <div class="proj-col">
             <h4>배경</h4>
             <ul>${p.bg.map(b=>`<li>${b}</li>`).join('')}</ul>
@@ -616,6 +685,21 @@ function renderProjects(filter){
   });
 }
 renderProjects('all');
+
+// 이미지 라이트박스
+function openLightbox(src){
+  const lb = document.getElementById('lightbox');
+  document.getElementById('lightbox-img').src = src;
+  lb.classList.add('open');
+}
+document.addEventListener('click', (e)=>{
+  if(e.target.id === 'lightbox' || e.target.id === 'lightbox-img'){
+    document.getElementById('lightbox').classList.remove('open');
+  }
+});
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape') document.getElementById('lightbox').classList.remove('open');
+});
 
 document.querySelectorAll('.filter-btn').forEach(btn => {
   btn.addEventListener('click', () => {
